@@ -6,6 +6,6 @@ visualization tool for the package.
 
 Tips for installing the MFA package:
 
-• download MFA folder from the repository
-• open mfa.R in Rstudio
-• run the code in the file "devtools workflow.R" (the package mfa should be installed in your computer after this)
+* download MFA folder from the repository
+* open mfa.R in Rstudio
+* run the code in the file "devtools workflow.R" (the package mfa should be installed in your computer after this)
