@@ -1,0 +1,540 @@
+---
+title: "Multiple Factor Analysis in R"
+author: "Si Wei Wu, Renjie Wu, Daniel Lee"
+date: "December 2, 2016"
+output: ioslides_presentation
+---
+
+##mfaR Package
+
+- Uses S4 object-oriented programming
+
+- Main purpose: perform Multiple Factor Analysis
+
+- Requires the user to load the following packages:
+
+    - MFAg
+  
+    - ggplot2
+  
+    - png
+
+    - gridGraphics
+  
+    - gridExtra
+
+##mfaR Package
+
+The following is a list of functions and their purposes in the package.
+
+##mfa_const()
+
+- Main function in the package
+
+- `mfa_const` takes the following arguments:
+
+    - `mfa_const(data, sets, ncomps = NULL, center = TRUE, scale = TRUE)`
+
+##mfa_const()
+
+The argumets for `mfa_const()` are:
+
+- **data**: data set (matrix or data frame).
+- **sets**: list of vectors indicating the sets of variables (i.e. the blocks). Sets must be a list. It can be a list of character vectors or numeric vectors.
+- **ncomps**: integer indicating how many number of components (i.e. factors) are to be extracted. By default, `ncomps = NULL`, which means that all possible components will be extracted.
+
+##mfa_const()
+
+- **center**: either a logical value or a numeric vector of length equal to the number of active variables in the analysis. The value of `center` determines how column centering is performed. If `center` is a numeric vector with length equal to the number of active variables, then each variable has the corresponding value from `center` subtracted from it. If `center = TRUE`, then centering is done by subtracting the column means, and if `center = FALSE`, no centering is done.
+
+##mfa_const()
+
+- **scale**: either a logical value or a numeric vector of length equal to the number of active variables in the analysis. The value of `scale` determines how the scaling of active variables is performed (after centering). If `scale` is a numeric vector, then each active variable is divided by the corresponding value from `scale`. If `scale = TRUE`, then scaling is done by dividing the (centered) variables by their standard deviations if `center = TRUE`, and the root mean square otherwise. If `scale = FALSE`, no scaling is done.
+
+##mfa_const()
+
+`mfa_const()` returns an object of class `"mfa"` with the following elements:
+
+- vector containing the eigenvalues, computed from the generalized singular value decomposition of $\boldsymbol{X} = \boldsymbol{P \Delta Q^T}$.
+- matrix of common factor scores (cfs) (also known as compromise factor scores)
+- list of matrices of partial factor scores (pfs)
+- matrix of loadings (also known as factor loadings) (mol). This is the matrix $\boldsymbol{Q}$ in $\boldsymbol{X} = \boldsymbol{P \Delta Q^T}$, i.e. the right singular values.
+- matrix of $\alpha$ weights
+
+##mfa_const()
+
+Example of `mfa_const()` function and its outputs using a fictitious wine tasting experiment
+
+- 12 wines made from Sauvignon Blanc grapes coming from three wine regions (4 wines from each region): New Zealand, France, and Canada
+
+- Ten expert assessors evaluate these wines. 
+
+##mfa_const()
+
+The assessors were asked:
+
+1. to evaluate the wines on 9-point rating scales, using four variables considered as standard for the evaluation of these wines: cat-pee, passion-fruit, green pepper, and mineral.
+
+2. if they felt the need, they were able to add some variables of their own.
+
+##mfa_const()
+
+Perform the multiple factor analysis on this dataset
+
+1. Load the wine data. 
+
+2. Perform multiple factor analysis on the data. Even though we can use all the possible number of components, for illustrative purposes, we will only use 3. That is, `ncomps = 3`. 
+
+```{r include = FALSE}
+
+library(mfaR)
+library(MFAg)
+
+# Read data set
+wines <- read.csv("wines.csv") 
+
+# Add row names
+row.names(wines) <- wines[,1]
+wines <- read.csv("wines.csv") 
+
+row.names(wines) <- wines[,1]
+
+# Separate the grand table into individual tables (create the set list)
+col_ind = grep("V2", colnames(wines))
+sets = list()
+for (i in 1:(length(col_ind))){
+  # First 9 tables
+  if (i < 10){
+    sets[[i]]= (col_ind[i]-1):(col_ind[i+1]-2)
+  }
+  # Last table 
+  else{
+    sets[[i]]= (col_ind[i]-1):(col_ind[i]+2)
+  }
+}
+
+```
+
+```{r}
+
+# Construct an object of class 'mfa'
+mfa_wine <- mfa_const(data = wines, sets  = sets, ncomps = 3)
+
+```
+
+##print()
+
+- `mfa_wine` is an object of class `mfa`
+
+- The output of `mfa_wine` is too long
+
+- Use the `print()` method to display the basic information: 
+
+    + eigenvalues
+  
+    + compromise factor scores (cfs)
+
+##print() {.smaller}
+
+```{r}
+
+print(mfa_wine)
+
+```
+
+##plot_compromise()
+
+- Takes two dimensions of compromise of tables and returns a plot of the two dimensions.
+
+```{r include = FALSE}
+
+library(ggplot2)
+library(png)
+library(gridGraphics)
+
+```
+
+##plot_compromise()
+
+```{r fig.width = 8.5, fig.height = 4.25, include = FALSE}
+
+NZ <- readPNG("nz.png")
+FR <- readPNG("fr.png")
+CA <- readPNG("ca.png")
+
+cfs = mfa_wine@cfs
+
+```
+
+```{r}
+
+plot_compromise(cfs[, 1], cfs[, 2], rownames_vec = row.names(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+This function takes two dimensions of partial factor scores and returns a plot of the two dimensions.
+
+```{r include = FALSE}
+
+library(gridExtra)
+
+```
+
+```{r eval = FALSE}
+
+library(gridExtra)
+
+```
+
+##plot_pfs()
+
+Assessor 1
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[1]][, 1], mfa_wine@pfs[[1]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 2
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[2]][, 1], mfa_wine@pfs[[2]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 3
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[3]][, 1], mfa_wine@pfs[[3]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 4
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[4]][, 1], mfa_wine@pfs[[4]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 5
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[5]][, 1], mfa_wine@pfs[[5]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 6
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[6]][, 1], mfa_wine@pfs[[6]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 7
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[7]][, 1], mfa_wine@pfs[[7]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 8
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[8]][, 1], mfa_wine@pfs[[8]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 9
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[9]][, 1], mfa_wine@pfs[[9]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_pfs()
+
+Assessor 10
+
+```{r, echo = FALSE}
+
+plot_pfs(mfa_wine@pfs[[10]][, 1], mfa_wine@pfs[[10]][, 2], rownames(wines), NZ, FR, CA)
+
+```
+
+##plot_vload()
+
+This function takes two dimensions of variable loadings and returns a plot of the two dimensions. An example using the wine data is below.
+
+```{r, echo = FALSE}
+
+col_ind = grep("V15", colnames(wines))
+colnames(wines)[col_ind] <- "Peach"
+col_ind = grep("V14", colnames(wines))
+colnames(wines)[col_ind] <- "Grass"
+col_ind = grep("V13", colnames(wines))
+colnames(wines)[col_ind] <- "Melon"
+col_ind = grep("V12", colnames(wines))
+colnames(wines)[col_ind] <- "Hay"
+col_ind = grep("V11", colnames(wines))
+colnames(wines)[col_ind] <- "Vegetal"
+col_ind = grep("V10", colnames(wines))
+colnames(wines)[col_ind] <- "Flinty"
+col_ind = grep("V9", colnames(wines))
+colnames(wines)[col_ind] <- "Grassy"
+col_ind = grep("V8", colnames(wines))
+colnames(wines)[col_ind] <- "Leafy"
+col_ind = grep("V7", colnames(wines))
+colnames(wines)[col_ind] <- "Tropical"
+col_ind = grep("V6", colnames(wines))
+colnames(wines)[col_ind] <- "Citrus"
+col_ind = grep("V5", colnames(wines))
+colnames(wines)[col_ind] <- "Smoky"
+col_ind = grep("V4", colnames(wines))
+colnames(wines)[col_ind] <- "Mineral"
+col_ind = grep("V3", colnames(wines))
+colnames(wines)[col_ind] <- "Green Pepper"
+col_ind = grep("V2", colnames(wines))
+colnames(wines)[col_ind] <- "Passion Fruit"
+col_ind = grep("V1", colnames(wines))
+colnames(wines)[col_ind] <- "Cat Pee"
+
+```
+
+##plot_vload()
+
+Assessor 1
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[1]][,1], mfa_wine@mol[[1]][,2], colnames(wines)[sets[[1]]])
+
+```
+
+##plot_vload()
+
+Assessor 2
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[2]][,1], mfa_wine@mol[[2]][,2], colnames(wines)[sets[[2]]])
+
+```
+
+##plot_vload()
+
+Assessor 3
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[3]][,1], mfa_wine@mol[[3]][,2], colnames(wines)[sets[[3]]])
+
+```
+
+##plot_vload()
+
+Assessor 4
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[4]][,1], mfa_wine@mol[[4]][,2], colnames(wines)[sets[[4]]])
+
+```
+
+##plot_vload()
+
+Assessor 5
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[5]][,1], mfa_wine@mol[[5]][,2], colnames(wines)[sets[[5]]])
+
+```
+
+##plot_vload()
+
+Assessor 6
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[6]][,1], mfa_wine@mol[[6]][,2], colnames(wines)[sets[[6]]])
+
+```
+
+##plot_vload()
+
+Assessor 7
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[7]][,1], mfa_wine@mol[[7]][,2], colnames(wines)[sets[[7]]])
+
+```
+
+##plot_vload()
+
+Assessor 8
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[8]][,1], mfa_wine@mol[[8]][,2], colnames(wines)[sets[[8]]])
+
+```
+
+##plot_vload()
+
+Assessor 9
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[9]][,1], mfa_wine@mol[[9]][,2], colnames(wines)[sets[[9]]])
+
+```
+
+##plot_vload()
+
+Assessor 10
+
+```{r echo = FALSE}
+
+plot_vload(mfa_wine@mol[[10]][,1], mfa_wine@mol[[10]][,2], colnames(wines)[sets[[10]]])
+
+```
+
+##eigen_table()
+
+- Takes the `mfa` object and returns a table with singluar values, the eigenvalues, and cumulative, percentage of intertia, and cumulative percentage of inertia for all the extracted components.
+
+```{r}
+
+eigen_table(mfa_wine)
+
+```
+
+##COD() {.smaller}
+
+This function takes the `mfa` object and returns a matrix of contributions of an observation to a dimension. The outputs values are helpful in interpreting how the observations contribute to a dimension.
+
+```{r}
+
+COD(mfa_wine)
+
+```
+
+##CVD() {.smaller}
+
+- This function takes the `mfa` object and returns a list of output values that help interpret how the variables contribute to a dimension.
+
+- Below are the first two elements of the list.
+
+```{r, echo = FALSE}
+
+CVD(mfa_wine)[[1]]
+
+CVD(mfa_wine)[[2]]
+
+```
+
+##CTD() {.smaller}
+
+- This function takes the `mfa` object and returns a list of output values that help interpret how the tables contribute to a dimension. 
+
+- The contribution of a table reﬂects the proportion of the variance of a dimension that can be attributed to this table.
+
+```{r}
+
+CTD(mfa_wine)
+
+```
+
+##RV()
+
+- This function takes two tables with same number of rows and returns the $R_V$ coefficient. 
+
+- The $R_V$ coefficient is used to evaluate the similarity between two tables.
+
+- Below is an example using simulated data.
+
+```{r}
+
+table1 <- matrix(rnorm(100), nrow = 10)
+table2 <- matrix(rnorm(50), nrow = 10)
+RV(table1, table2)
+
+```
+
+##RV_table()
+
+- This function takes a dataset of class `matrix` or `data.frame`, and a list of sets of how to divide up the dataset into separate blocks. 
+
+- Then, it outputs a table of $R_V$ coefficients. RV coefficient table contains information of how similar the individual tables are to each other pairwise.
+
+##RV_table()
+
+```{r}
+
+RV_table(wines, sets)
+
+```
+
+##Lg()
+
+- This function calculates the $L_g$ coefficient between two tables. 
+
+- It takes in two tables of class `matrix` and with same rows, and returns the $L_g$ coefficient.
+
+- Below is an example using simulated data.
+
+```{r}
+
+table1 <- matrix(rnorm(100), nrow = 10)
+table2 <- matrix(rnorm(50), nrow = 10)
+Lg(table1, table2)
+
+```
+
+##Lg_table()
+
+- This function computes a table of $L_g$ coefficients from a dataset (either class `matrix` or class `data.frame`) along with `sets` of class `list`. 
+
+- It then returns a matrix containing $L_g$ coefficients.
+
+##Lg_table() {.smaller}
+
+```{r}
+
+Lg_table(wines, sets)
+
+```
+
+## Thank You {.flexbox .vcenter}
+
+![For a Great Semester!](Glass-versus-crystal.png)
+
+
